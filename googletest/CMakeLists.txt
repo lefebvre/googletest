@@ -1,3 +1,4 @@
+
 ########################################################################
 # CMake build script for Google Test.
 #
@@ -7,6 +8,16 @@
 
 # BUILD_SHARED_LIBS is a standard CMake variable, but we declare it here to
 # make it prominent in the GUI.
+IF(COMMAND TRIBITS_PACKAGE)
+TRIBITS_PACKAGE(googletest)
+SET(gtest_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}")
+option(BUILD_SHARED_LIBS "Build shared libraries (DLLs)." ${BUILD_SHARED_LIBS})
+option(gtest_build_tests "Build all of gtest's own tests." OFF)
+
+option(gtest_build_samples "Build gtest's sample programs." OFF)
+
+ELSE()
+
 option(BUILD_SHARED_LIBS "Build shared libraries (DLLs)." OFF)
 
 # When other libraries are using a shared version of runtime libraries,
@@ -33,6 +44,7 @@ include(cmake/hermetic_build.cmake OPTIONAL)
 if (COMMAND pre_project_set_up_hermetic_build)
   pre_project_set_up_hermetic_build()
 endif()
+ENDIF()
 
 ########################################################################
 #
@@ -44,8 +56,10 @@ endif()
 # as ${gtest_SOURCE_DIR} and to the root binary directory as
 # ${gtest_BINARY_DIR}.
 # Language "C" is required for find_package(Threads).
+IF(NOT COMMAND TRIBITS_PACKAGE)
 project(gtest CXX C)
 cmake_minimum_required(VERSION 2.6.2)
+ENDIF()
 
 if (COMMAND set_up_hermetic_build)
   set_up_hermetic_build()
@@ -87,8 +101,21 @@ endif()
 # Google Test libraries.  We build them using more strict warnings than what
 # are used for other targets, to ensure that gtest can be compiled by a user
 # aggressive about warnings.
-cxx_library(gtest "${cxx_strict}" src/gtest-all.cc)
-cxx_library(gtest_main "${cxx_strict}" src/gtest_main.cc)
+IF(COMMAND TRIBITS_ADD_LIBRARY)
+   IF(CMAKE_USE_PTHREADS_INIT)
+      TRIBITS_ADD_LIBRARY(gtest SOURCES src/gtest-all.cc IMPORTEDLIBS ${CMAKE_THREAD_LIBS_INIT})
+      TRIBITS_ADD_LIBRARY(gtest_main SOURCES src/gtest_main.cc IMPORTEDLIBS ${CMAKE_THREAD_LIBS_INIT})
+   ELSE()
+      TRIBITS_ADD_LIBRARY(gtest SOURCES src/gtest-all.cc)
+      TRIBITS_ADD_LIBRARY(gtest_main SOURCES src/gtest_main.cc)
+   ENDIF()
+#   SET_TARGET_PROPERTIES(gtest PROPERTIES COMPILE_DEFINITIONS ${cxx_strict})
+#   SET_TARGET_PROPERTIES(gtest_main PROPERTIES COMPILE_DEFINITIONS ${cxx_strict})
+ELSE()
+   cxx_library(gtest "${cxx_strict}" src/gtest-all.cc)
+   cxx_library(gtest_main "${cxx_strict}" src/gtest_main.cc)
+ENDIF()
+
 target_link_libraries(gtest_main gtest)
 
 # If the CMake version supports it, attach header directory information
@@ -102,8 +129,11 @@ endif()
 ########################################################################
 #
 # Install rules
+# TRIBITS defaults install of libraries
+IF(NOT COMMAND TRIBITS_ADD_LIBRARY)
 install(TARGETS gtest gtest_main
   DESTINATION lib)
+ENDIF()
 install(DIRECTORY ${gtest_SOURCE_DIR}/include/gtest
   DESTINATION include)
 
@@ -284,3 +314,7 @@ if (gtest_build_tests)
   cxx_executable(gtest_xml_output_unittest_ test gtest)
   py_test(gtest_xml_output_unittest)
 endif()
+
+IF(COMMAND TRIBITS_PACKAGE_POSTPROCESS)
+   TRIBITS_PACKAGE_POSTPROCESS()
+ENDIF()
