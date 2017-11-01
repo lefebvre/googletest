@@ -102,6 +102,9 @@ endif()
 # are used for other targets, to ensure that gtest can be compiled by a user
 # aggressive about warnings.
 IF(COMMAND TRIBITS_ADD_LIBRARY)
+   IF(BUILD_SHARED_LIBS)
+      ADD_DEFINITIONS(-DGTEST_CREATE_SHARED_LIBRARY=1)
+   ENDIF()
    IF(CMAKE_USE_PTHREADS_INIT)
       TRIBITS_ADD_LIBRARY(gtest SOURCES src/gtest-all.cc IMPORTEDLIBS ${CMAKE_THREAD_LIBS_INIT})
       TRIBITS_ADD_LIBRARY(gtest_main SOURCES src/gtest_main.cc IMPORTEDLIBS ${CMAKE_THREAD_LIBS_INIT})
